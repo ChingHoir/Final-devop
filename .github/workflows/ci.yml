@@ -1,0 +1,172 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  MAVEN_OPTS: -Dmaven.repo.local=${{ github.workspace }}/.m2/repository
+  NOTIFY_EMAIL: srengty@gmail.com
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        id: build
+        run: |
+          cd id-card-management
+          ./mvnw clean package -DskipTests -q
+        continue-on-error: true
+
+      - name: Check build status
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "Build failed!"
+          exit 1
+
+      - name: Run Tests (SQLite)
+        id: test
+        run: |
+          cd id-card-management
+          ./mvnw test -Dspring.profiles.active=test
+        continue-on-error: true
+
+      - name: Check test status
+        if: steps.test.outcome == 'failure'
+        run: |
+          echo "Tests failed!"
+          exit 1
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: id-card-management-jar
+          path: id-card-management/target/*.jar
+
+    # -------- EMAIL ON BUILD/TEST FAILURE --------
+    # Fires if any step in this job fails
+    # Sends CC to srengty@gmail.com AND the developer who committed
+
+  notify-build-failure:
+    needs: build-and-test
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get commit author email
+        id: get_author
+        run: |
+          AUTHOR_EMAIL=$(git log -1 --format="%ae")
+          echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ BUILD/TEST FAILED - ${{ github.repository }} #${{ github.run_number }}"
+          to: ${{ env.NOTIFY_EMAIL }}
+          cc: ${{ steps.get_author.outputs.author_email }}
+          from: GitHub Actions CI/CD
+          body: |
+            The Build & Test stage has FAILED.
+
+            Repository: ${{ github.repository }}
+            Run #: ${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Branch: ${{ github.ref_name }}
+            URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please check the build log for details.
+
+  deploy:
+    needs: build-and-test
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Run Ansible Playbook
+        id: deploy_step
+        run: |
+          ansible-playbook -i inventory ansible-playbook.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+        continue-on-error: true
+
+      - name: Check deploy status
+        if: steps.deploy_step.outcome == 'failure'
+        run: |
+          echo "Deploy failed!"
+          exit 1
+
+  notify-deploy-failure:
+    needs: deploy
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get commit author email
+        id: get_author
+        run: |
+          AUTHOR_EMAIL=$(git log -1 --format="%ae")
+          echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ DEPLOY FAILED - ${{ github.repository }} #${{ github.run_number }}"
+          to: ${{ env.NOTIFY_EMAIL }}
+          cc: ${{ steps.get_author.outputs.author_email }}
+          from: GitHub Actions CI/CD
+          body: |
+            The Ansible Deploy stage has FAILED.
+
+            Repository: ${{ github.repository }}
+            Run #: ${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Build and tests passed, but deployment to the web server failed.
+            Please check the deployment logs.
