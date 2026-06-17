@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Profile List</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>ID Card Profiles</h1>
+        
+        <div class="actions">
+            <a th:href="@{/api/profiles/create}" class="btn-primary">Create New Profile</a>
+            
+            <form th:action="@{/api/profiles/search}" method="get" class="search-form">
+                <input type="text" name="keyword" placeholder="Search profiles...">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Registration</th>
+                    <th>Photo</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Type</th>
+                    <th>Department</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="profile : ${profiles}">
+                    <td th:text="${profile.registrationNumber}"></td>
+                    <td>
+                        <img th:if="${profile.photo != null}" 
+                             th:src="'data:' + ${profile.photoContentType} + ';base64,' + ${profile.photoBase64}" 
+                             width="50" height="50" style="object-fit:cover;border-radius:50%;">
+                        <span th:unless="${profile.photo != null}">No photo</span>
+                    </td>
+                    <td th:text="${profile.fullName}"></td>
+                    <td th:text="${profile.email}"></td>
+                    <td th:text="${profile.profileType}"></td>
+                    <td th:text="${profile.department}"></td>
+                    <td>
+                        <a th:href="@{/api/profiles/preview/{id}(id=${profile.id})}" class="btn-preview">Preview</a>
+                        <a th:href="@{/api/profiles/edit/{id}(id=${profile.id})}" class="btn-edit">Edit</a>
+                        <a th:href="@{/api/profiles/delete/{id}(id=${profile.id})}" class="btn-delete" onclick="return confirm('Are you sure?')">Delete</a>
+                        <a th:href="@{/api/profiles/{id}/pdf(id=${profile.id})}" class="btn-pdf">PDF</a>
+                        <a th:href="@{/api/profiles/{id}/qrcode(id=${profile.id})}" class="btn-qr" target="_blank">QR</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

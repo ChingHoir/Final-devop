@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Template</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1 th:if="${template.id == null}">Create New Template</h1>
+        <h1 th:unless="${template.id == null}">Edit Template</h1>
+        
+        <form th:action="@{/api/templates/create}" th:object="${template}" method="post" class="template-form">
+            <div class="form-group">
+                <label for="name">Template Name:</label>
+                <input type="text" id="name" th:field="*{name}" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" th:field="*{description}" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="content">Content (HTML):</label>
+                <textarea id="content" th:field="*{content}" class="form-control" rows="10" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="templateType">Template Type:</label>
+                <select id="templateType" th:field="*{templateType}" class="form-control" required>
+                    <option th:each="type : ${templateTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="barcodeType">Barcode Type:</label>
+                <select id="barcodeType" th:field="*{barcodeType}" class="form-control">
+                    <option value="">-- None --</option>
+                    <option th:each="type : ${barcodeTypes}" th:value="${type}" th:text="${type}"></option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" th:field="*{isActive}" th:value="true">
+                    Active
+                </label>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Save Template</button>
+                <a th:href="@{/api/templates}" class="btn-back">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

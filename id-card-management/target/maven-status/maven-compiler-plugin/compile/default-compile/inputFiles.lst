@@ -1,0 +1,17 @@
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\model\ProfileBuilder.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\service\BarcodeService.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\repository\ProfileRepository.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\service\ProfileService.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\service\QRCodeService.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\model\BarcodeType.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\service\PDFService.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\repository\TemplateRepository.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\controller\ProfileController.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\controller\TemplateController.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\IdCardApplication.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\model\Profile.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\model\ProfileType.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\model\Template.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\config\WebConfig.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\controller\HomeController.java
+D:\Year4\semester2\dev\Final\id-card-management\src\main\java\com\example\idcard\dto\ProfileDTO.java

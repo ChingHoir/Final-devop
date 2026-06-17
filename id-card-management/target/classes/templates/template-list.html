@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Template List</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>ID Card Templates</h1>
+        
+        <div class="actions">
+            <a th:href="@{/api/templates/create}" class="btn-primary">Create New Template</a>
+            
+            <form th:action="@{/api/templates/search}" method="get" class="search-form">
+                <input type="text" name="keyword" placeholder="Search templates...">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Barcode Type</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="template : ${templates}">
+                    <td th:text="${template.id}"></td>
+                    <td th:text="${template.name}"></td>
+                    <td th:text="${template.templateType}"></td>
+                    <td th:text="${template.barcodeType}"></td>
+                    <td th:text="${template.isActive ? 'Yes' : 'No'}"></td>
+                    <td>
+                        <a th:href="@{/api/templates/{id}(id=${template.id})}" class="btn-preview">View</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="back-link">
+            <a th:href="@{/api/profiles}">Back to Profiles</a>
+        </div>
+    </div>
+</body>
+</html>

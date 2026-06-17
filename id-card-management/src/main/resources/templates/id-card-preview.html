@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ID Card Preview</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>ID Card Preview</h1>
+        
+        <div class="id-card" th:with="profile=${profile}">
+            <div class="card-header">
+                <h2>INSTITUTION ID CARD</h2>
+                <p th:text="'Reg #: ' + ${profile.registrationNumber}"></p>
+            </div>
+            
+            <div class="card-body">
+                <div class="photo-section">
+                    <img th:if="${profile.photo != null}" 
+                         th:src="'data:' + ${profile.photoContentType} + ';base64,' + ${profile.photoBase64}" 
+                         width="150" height="150" style="object-fit:cover;border-radius:50%;">
+                    <div th:unless="${profile.photo != null}" class="no-photo">No Photo</div>
+                </div>
+                
+                <div class="info-section">
+                    <p><strong>Name:</strong> <span th:text="${profile.fullName}"></span></p>
+                    <p><strong>Email:</strong> <span th:text="${profile.email}"></span></p>
+                    <p><strong>Phone:</strong> <span th:text="${profile.phone}"></span></p>
+                    <p><strong>Type:</strong> <span th:text="${profile.profileType}"></span></p>
+                    <p><strong>Department:</strong> <span th:text="${profile.department}"></span></p>
+                    <p><strong>Position:</strong> <span th:text="${profile.position}"></span></p>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="qr-section">
+                    <img th:src="@{/api/profiles/{id}/qrcode(id=${profile.id})}" width="100" height="100">
+                </div>
+                <div class="actions">
+                    <a th:href="@{/api/profiles/{id}/pdf(id=${profile.id})}" class="btn-pdf">Download PDF</a>
+                    <a th:href="@{/api/profiles}" class="btn-back">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
