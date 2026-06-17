@@ -58,8 +58,16 @@ spec:
     port: 8443
     targetPort: 8080
     nodePort: 30843
+  - name: app-direct
+    port: 8081
+    targetPort: 8081
+    nodePort: 30881
   - name: ssh
     port: 2222
     targetPort: 22
     nodePort: 30222
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+    nodePort: 30306
   type: NodePort
