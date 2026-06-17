@@ -15,12 +15,20 @@
         path: "{{ project_dir }}"
         state: directory
 
-    - name: Clone or pull the repository
-      git:
-        repo: 'https://github.com/ChingHoir/Final-devop.git'
-        dest: "{{ project_dir }}"
-        force: yes
-        accept_hostkey: yes
+    - name: Clone or pull the repository (stash any local changes first)
+      shell: |
+        if [ -d "{{ project_dir }}/.git" ]; then
+          cd "{{ project_dir }}" && git stash --include-untracked && git pull
+        else
+          git clone 'https://github.com/ChingHoir/Final-devop.git' "{{ project_dir }}"
+        fi
+      args:
+        executable: /bin/bash
+      register: git_result
+
+    - name: Show git result
+      debug:
+        var: git_result.stdout_lines
 
     - name: Verify project files exist
       command: ls -la "{{ project_dir }}/id-card-management/"
@@ -30,10 +38,10 @@
       debug:
         var: project_files.stdout_lines
 
-    - name: Build project with Maven (skip tests for now)
+    - name: Build project with Maven (full package)
       shell: |
         cd "{{ project_dir }}/id-card-management"
-        mvn clean compile -DskipTests -q
+        mvn clean package -DskipTests -q
       register: build_result
       ignore_errors: yes
 
@@ -74,7 +82,7 @@
         cp /tmp/{{ db_name }}_backup.sql "{{ project_dir }}/mysql-backup.sql"
       when: backup_check is success
 
-    - name: Save test output to file
+    - name: Save output results to file
       shell: |
         cd "{{ project_dir }}"
         echo "=== GIT LOG ===" > q3-results.txt
