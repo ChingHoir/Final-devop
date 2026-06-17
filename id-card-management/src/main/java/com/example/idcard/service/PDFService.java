@@ -15,6 +15,11 @@ import com.itextpdf.io.image.ImageDataFactory;
 
 import org.springframework.stereotype.Service;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -38,6 +43,9 @@ public class PDFService {
         // Use a page size slightly larger than a single card for printing
         PageSize pageSize = new PageSize(CARD_WIDTH + 40, CARD_HEIGHT + 40);
         pdfDoc.setDefaultPageSize(pageSize);
+
+        // Add the first page before creating Document to ensure getLastPage() works in drawIDCard
+        pdfDoc.addNewPage();
 
         Document document = new Document(pdfDoc);
         document.setMargins(20, 20, 20, 20);
@@ -73,7 +81,7 @@ public class PDFService {
         canvas.stroke();
 
         // --- Draw header banner ---
-        float headerHeight = 44f;
+        float headerHeight = 40f;
         canvas.roundRectangle(xOffset, yOffset + CARD_HEIGHT - headerHeight, CARD_WIDTH, headerHeight, 8);
         canvas.clip();
         canvas.endPath();
@@ -92,10 +100,10 @@ public class PDFService {
         canvas = new PdfCanvas(pdfDoc.getLastPage());
 
         // --- Header text ---
-        float headerTextY = yOffset + CARD_HEIGHT - 14f;
+        float headerTextY = yOffset + CARD_HEIGHT - 12f;
         document.showTextAligned(
             new Paragraph("INSTITUTION ID CARD")
-                .setFontSize(10)
+                .setFontSize(9)
                 .setBold()
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER),
@@ -104,18 +112,20 @@ public class PDFService {
 
         // Registration number below header
         document.showTextAligned(
-            new Paragraph("Reg: " + profile.getRegistrationNumber())
-                .setFontSize(6.5f)
+            new Paragraph("Reg #: " + profile.getRegistrationNumber())
+                .setFontSize(6f)
                 .setFontColor(new DeviceRgb(220, 220, 240))
                 .setTextAlignment(TextAlignment.CENTER),
-            xOffset + CARD_WIDTH / 2, headerTextY - 12,
+            xOffset + CARD_WIDTH / 2, headerTextY - 11,
             TextAlignment.CENTER);
 
-        // --- Photo section ---
+        // --- Body section: Photo (left) + Info (right) ---
+        float bodyTopY = yOffset + CARD_HEIGHT - headerHeight - 8f;
         float photoX = xOffset + 12f;
-        float photoY = yOffset + CARD_HEIGHT - headerHeight - 70f;
+        float photoY = bodyTopY - 72f;
         float photoSize = 65f;
 
+        // --- Photo section ---
         if (profile.getPhoto() != null && profile.getPhoto().length > 0) {
             try {
                 Image img = new Image(ImageDataFactory.create(profile.getPhoto()));
@@ -131,7 +141,6 @@ public class PDFService {
                 canvas.rectangle(photoX, photoY, photoSize, photoSize);
                 canvas.stroke();
             } catch (Exception e) {
-                // Fallback if photo fails to render
                 drawPhotoPlaceholder(canvas, photoX, photoY, photoSize);
             }
         } else {
@@ -139,37 +148,55 @@ public class PDFService {
         }
 
         // --- Info fields (right side of photo) ---
-        float infoX = photoX + photoSize + 14f;
-        float infoY = yOffset + CARD_HEIGHT - headerHeight - 16f;
+        float infoX = photoX + photoSize + 12f;
+        float infoY = bodyTopY - 4f;
         float lineHeight = 11f;
 
-        addInfoLine(document, infoX, infoY, "NAME", profile.getFullName());
-        addInfoLine(document, infoX, infoY - lineHeight, "EMAIL", profile.getEmail());
-        addInfoLine(document, infoX, infoY - lineHeight * 2, "PHONE", profile.getPhone());
-        addInfoLine(document, infoX, infoY - lineHeight * 3, "TYPE", profile.getProfileType() != null ? profile.getProfileType().name() : "-");
-        addInfoLine(document, infoX, infoY - lineHeight * 4, "DEPT", profile.getDepartment() != null ? profile.getDepartment() : "-");
-        addInfoLine(document, infoX, infoY - lineHeight * 5, "POSITION", profile.getPosition() != null ? profile.getPosition() : "-");
+        addInfoLine(document, infoX, infoY, "Name", profile.getFullName());
+        addInfoLine(document, infoX, infoY - lineHeight, "Email", profile.getEmail());
+        addInfoLine(document, infoX, infoY - lineHeight * 2, "Phone", profile.getPhone());
+        addInfoLine(document, infoX, infoY - lineHeight * 3, "Type", profile.getProfileType() != null ? profile.getProfileType().name() : "-");
+        addInfoLine(document, infoX, infoY - lineHeight * 4, "Dept", profile.getDepartment() != null ? profile.getDepartment() : "-");
+        addInfoLine(document, infoX, infoY - lineHeight * 5, "Position", profile.getPosition() != null ? profile.getPosition() : "-");
 
-        // --- Address (below photo, full width) ---
-        float addrY = yOffset + 18f;
+        // --- Divider line ---
+        float dividerY = yOffset + 40f;
+        canvas.setStrokeColor(new DeviceRgb(220, 220, 230));
+        canvas.setLineWidth(0.5f);
+        canvas.moveTo(xOffset + 12, dividerY);
+        canvas.lineTo(xOffset + CARD_WIDTH - 12, dividerY);
+        canvas.stroke();
+
+        // --- Footer section with QR code ---
+        float footerY = dividerY - 5f;
+
+        // QR Code (left side)
+        try {
+            String verificationUrl = "https://verify.domain/" + profile.getId();
+            byte[] qrBytes = generateQRCode(verificationUrl, 60, 60);
+            Image qrImg = new Image(ImageDataFactory.create(qrBytes));
+            float qrSize = 28f;
+            qrImg.scaleToFit(qrSize, qrSize);
+            qrImg.setFixedPosition(xOffset + 12f, footerY - qrSize - 2f);
+            qrImg.setWidth(qrSize);
+            qrImg.setHeight(qrSize);
+            document.add(qrImg);
+        } catch (Exception e) {
+            // QR code failed - skip silently
+        }
+
+        // Address (center, above dates)
         if (profile.getAddress() != null && !profile.getAddress().isEmpty()) {
             document.showTextAligned(
                 new Paragraph(profile.getAddress())
                     .setFontSize(5.5f)
                     .setFontColor(TEXT_MUTED)
                     .setTextAlignment(TextAlignment.CENTER),
-                xOffset + CARD_WIDTH / 2, addrY,
+                xOffset + CARD_WIDTH / 2, footerY + 7f,
                 TextAlignment.CENTER);
         }
 
-        // --- Divider line ---
-        canvas.setStrokeColor(new DeviceRgb(220, 220, 230));
-        canvas.setLineWidth(0.5f);
-        canvas.moveTo(xOffset + 12, yOffset + addrY + 8);
-        canvas.lineTo(xOffset + CARD_WIDTH - 12, yOffset + addrY + 8);
-        canvas.stroke();
-
-        // --- Footer: Issue/Expiry dates ---
+        // Issue/Expiry dates (center)
         String footerText = "Issued: " + (profile.getIssueDate() != null ? profile.getIssueDate().toString() : "-")
             + "  |  Expires: " + (profile.getExpiryDate() != null ? profile.getExpiryDate().toString() : "N/A");
         document.showTextAligned(
@@ -179,6 +206,14 @@ public class PDFService {
                 .setTextAlignment(TextAlignment.CENTER),
             xOffset + CARD_WIDTH / 2, yOffset + 5f,
             TextAlignment.CENTER);
+    }
+
+    private byte[] generateQRCode(String text, int width, int height) throws Exception {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height);
+        ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
+        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
+        return pngOutputStream.toByteArray();
     }
 
     private void drawPhotoPlaceholder(PdfCanvas canvas, float x, float y, float size) {
@@ -202,7 +237,7 @@ public class PDFService {
         // Label
         document.showTextAligned(
             new Paragraph(label)
-                .setFontSize(5f)
+                .setFontSize(4.5f)
                 .setBold()
                 .setFontColor(TEXT_MUTED)
                 .setTextAlignment(TextAlignment.LEFT),
@@ -212,7 +247,7 @@ public class PDFService {
         // Value
         document.showTextAligned(
             new Paragraph(value)
-                .setFontSize(7f)
+                .setFontSize(6.5f)
                 .setFontColor(TEXT_DARK)
                 .setTextAlignment(TextAlignment.LEFT),
             x, y - 5f,
@@ -227,6 +262,9 @@ public class PDFService {
         // Page size for multiple cards: A4 landscape
         PageSize pageSize = PageSize.A4.rotate();
         pdfDoc.setDefaultPageSize(pageSize);
+
+        // Add the first page before creating Document to ensure getLastPage() works in drawIDCard
+        pdfDoc.addNewPage();
 
         Document document = new Document(pdfDoc);
         document.setMargins(PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN);

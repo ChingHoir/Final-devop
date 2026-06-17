@@ -6,17 +6,19 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Runtime stage with NGINX + Spring Boot + PHP + SSH
-FROM eclipse-temurin:21-jre
+# Runtime stage with JDK 21 (full JDK for Maven build/test) + NGINX + PHP + SSH
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 COPY --from=build /app/target/id-card-management-1.0.0.jar app.jar
 
-# Install NGINX, PHP, and SSH server, plus mysql client for health checks
+# Install NGINX, PHP, SSH server, git, MySQL client (for backup), maven (for build/test)
 RUN apt-get update && apt-get install -y \
     nginx \
     php \
     openssh-server \
+    git \
     default-mysql-client \
+    maven \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy NGINX configuration

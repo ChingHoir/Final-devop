@@ -1,0 +1,96 @@
+---
+- name: Login to Web Server and Perform Tasks
+  hosts: webserver
+  gather_facts: no
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    project_dir: /root/project
+    db_name: "B-Huy_Chanchhinghoir-db"
+    db_user: "root"
+    db_password: "Hello@123"
+
+  tasks:
+    - name: Ensure project directory exists
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+
+    - name: Clone or pull the repository
+      git:
+        repo: 'https://github.com/ChingHoir/Final-devop.git'
+        dest: "{{ project_dir }}"
+        force: yes
+        accept_hostkey: yes
+
+    - name: Verify project files exist
+      command: ls -la "{{ project_dir }}/id-card-management/"
+      register: project_files
+
+    - name: Show project files
+      debug:
+        var: project_files.stdout_lines
+
+    - name: Build project with Maven (skip tests for now)
+      shell: |
+        cd "{{ project_dir }}/id-card-management"
+        mvn clean compile -DskipTests -q
+      register: build_result
+      ignore_errors: yes
+
+    - name: Show build result
+      debug:
+        var: build_result.stdout_lines
+
+    - name: Run tests with SQLite (test profile)
+      shell: |
+        cd "{{ project_dir }}/id-card-management"
+        mvn test -Dspring.profiles.active=test
+      register: test_result
+      ignore_errors: yes
+      environment:
+        SPRING_PROFILES_ACTIVE: test
+
+    - name: Show test result
+      debug:
+        var: test_result.stdout_lines
+
+    - name: Backup MySQL database
+      shell: |
+        mysqldump -h 127.0.0.1 -u {{ db_user }} -p{{ db_password }} {{ db_name }} > /tmp/{{ db_name }}_backup.sql
+      register: backup_result
+      ignore_errors: yes
+
+    - name: Check backup file
+      command: ls -la /tmp/{{ db_name }}_backup.sql
+      register: backup_check
+      ignore_errors: yes
+
+    - name: Show backup result
+      debug:
+        var: backup_check.stdout_lines
+
+    - name: Copy backup to project
+      shell: |
+        cp /tmp/{{ db_name }}_backup.sql "{{ project_dir }}/mysql-backup.sql"
+      when: backup_check is success
+
+    - name: Save test output to file
+      shell: |
+        cd "{{ project_dir }}"
+        echo "=== GIT LOG ===" > q3-results.txt
+        git log --oneline -3 >> q3-results.txt
+        echo "" >> q3-results.txt
+        echo "=== BUILD RESULT ===" >> q3-results.txt
+        echo "{{ build_result.stdout }}" >> q3-results.txt
+        echo "" >> q3-results.txt
+        echo "=== TEST RESULT ===" >> q3-results.txt
+        echo "{{ test_result.stdout }}" >> q3-results.txt
+      when: build_result is success
+
+    - name: List all output files
+      command: ls -la "{{ project_dir }}/"
+      register: final_listing
+
+    - name: Show final files
+      debug:
+        var: final_listing.stdout_lines

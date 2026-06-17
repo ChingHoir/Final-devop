@@ -18,73 +18,6 @@
 ### YAML File Created
 **File:** `id-card-management/kubernetes/minikube-deployment.yaml`
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: e20221469-pod
-  labels:
-    app: e20221469-id-card
-spec:
-  containers:
-  # Container 1: Web Server (JDK 21 + NGINX + Spring Boot + PHP + SSH)
-  - name: web-server
-    image: id-card-app:latest
-    imagePullPolicy: Never
-    ports:
-    - containerPort: 8080
-      name: nginx
-    - containerPort: 8081
-      name: springboot
-    - containerPort: 22
-      name: ssh
-    env:
-    - name: SERVER_PORT
-      value: "8081"
-    - name: SPRING_DATASOURCE_URL
-      value: "jdbc:mysql://127.0.0.1:3306/B-Huy_Chanchhinghoir-db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
-    - name: SPRING_DATASOURCE_USERNAME
-      value: "root"
-    - name: SPRING_DATASOURCE_PASSWORD
-      value: "Hello@123"
-    - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-      value: "update"
-    - name: SPRING_JPA_SHOW_SQL
-      value: "true"
-
-  # Container 2: MySQL Database
-  - name: mysql
-    image: mysql:8.0
-    ports:
-    - containerPort: 3306
-    env:
-    - name: MYSQL_ROOT_PASSWORD
-      value: "Hello@123"
-    - name: MYSQL_DATABASE
-      value: "B-Huy_Chanchhinghoir-db"
-    - name: MYSQL_CHARACTER_SET_SERVER
-      value: "utf8mb4"
-    - name: MYSQL_COLLATION_SERVER
-      value: "utf8mb4_unicode_ci"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: e20221469-service
-spec:
-  selector:
-    app: e20221469-id-card
-  ports:
-  - name: website
-    port: 8443
-    targetPort: 8080
-    nodePort: 30843
-  - name: ssh
-    port: 2222
-    targetPort: 22
-    nodePort: 30222
-  type: NodePort
-```
 
 ### Pod Configuration Summary
 | Item | Value |
@@ -100,18 +33,7 @@ spec:
 | **SSH NodePort** | 30222 |
 
 ### Verification Commands & Output
-```bash
-# Check running pods
-kubectl get pods
-NAME            READY   STATUS    RESTARTS   AGE
-e20221469-pod   2/2     Running   0          2m26s
-
-# Check services
-kubectl get svc
-NAME                        TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                         AGE
-e20221469-service           NodePort    10.108.173.248   <none>        8443:30843/TCP,2222:30222/TCP   2m26s
-kubernetes                  ClusterIP   10.96.0.1        <none>        443/TCP                         49m
-```
+![alt text](image-4.png)
 
 ---
 
@@ -123,50 +45,7 @@ kubectl exec e20221469-pod -c web-server -- php -m
 ```
 
 ### Output (saved to `php-modules.txt`)
-```
-[PHP Modules]
-calendar
-Core
-ctype
-date
-exif
-FFI
-fileinfo
-filter
-ftp
-gettext
-hash
-iconv
-json
-lexbor
-libxml
-openssl
-pcntl
-pcre
-PDO
-Phar
-posix
-random
-readline
-Reflection
-session
-shmop
-sockets
-sodium
-SPL
-standard
-sysvmsg
-sysvsem
-sysvshm
-tokenizer
-uri
-Zend OPcache
-zlib
-
-[Zend Modules]
-Zend OPcache
-```
-
+![alt text](image-5.png)
 **File location:** `php-modules.txt` (repository root)
 
 ---
@@ -179,11 +58,7 @@ kubectl exec e20221469-pod -c mysql -- mysql -u root -pHello@123 B-Huy_Chanchhin
 ```
 
 ### Output (saved to `mysql-tables.txt`)
-```
-Tables_in_B-Huy_Chanchhinghoir-db
-profiles
-templates
-```
+![alt text](image-6.png)
 
 **File location:** `mysql-tables.txt` (repository root)
 
@@ -230,11 +105,7 @@ The Dockerfile uses a multi-stage build:
    - MySQL client (for waiting until MySQL is ready)
 
 ### Docker Build Command
-```bash
-cd id-card-management
-minikube -p minikube docker-env --shell powershell | Invoke-Expression
-docker build -t id-card-app:latest .
-```
+![alt text](image-7.png)
 
 ---
 
@@ -243,21 +114,7 @@ docker build -t id-card-app:latest .
 **File:** `id-card-management/nginx/nginx.conf`
 
 NGINX listens on port 8080 and proxies all requests to Spring Boot running on port 8081:
-```nginx
-upstream springboot {
-    server 127.0.0.1:8081;
-}
-
-server {
-    listen 8080;
-    server_name localhost;
-
-    location / {
-        proxy_pass http://springboot;
-        ...
-    }
-}
-```
+![alt text](image-8.png)
 
 ---
 

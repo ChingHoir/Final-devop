@@ -150,7 +150,9 @@ public class ProfileController {
                        "attachment; filename=id-card-" + profile.getRegistrationNumber() + ".pdf");
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(("PDF generation failed: " + e.getMessage()).getBytes());
         }
     }
     
