@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Profile List</title>
+    <title>Profile List - ID Card Management</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
     <div class="container">
         <h1>ID Card Profiles</h1>
-        
-        <div class="actions">
-            <a th:href="@{/api/profiles/create}" class="btn-primary">Create New Profile</a>
-            
+
+        <div class="actions-bar">
+            <a th:href="@{/api/profiles/create}" class="btn btn-primary">+ Create New Profile</a>
+
             <form th:action="@{/api/profiles/search}" method="get" class="search-form">
-                <input type="text" name="keyword" placeholder="Search profiles...">
+                <input type="text" name="keyword" placeholder="Search by name, email, or reg number...">
                 <button type="submit">Search</button>
             </form>
         </div>
-        
+
         <table>
             <thead>
                 <tr>
-                    <th>Registration</th>
                     <th>Photo</th>
+                    <th>Registration</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Type</th>
@@ -31,23 +31,34 @@
             </thead>
             <tbody>
                 <tr th:each="profile : ${profiles}">
-                    <td th:text="${profile.registrationNumber}"></td>
                     <td>
-                        <img th:if="${profile.photo != null}" 
-                             th:src="'data:' + ${profile.photoContentType} + ';base64,' + ${profile.photoBase64}" 
-                             width="50" height="50" style="object-fit:cover;border-radius:50%;">
-                        <span th:unless="${profile.photo != null}">No photo</span>
+                        <img th:if="${profile.photo != null}"
+                             th:src="'data:' + ${profile.photoContentType} + ';base64,' + ${profile.photoBase64}"
+                             class="photo-thumb"
+                             alt="Photo">
+                        <span th:unless="${profile.photo != null}" class="no-photo-thumb">—</span>
                     </td>
-                    <td th:text="${profile.fullName}"></td>
+                    <td th:text="${profile.registrationNumber}" style="font-family: monospace; font-size: 12px;"></td>
+                    <td><strong th:text="${profile.fullName}"></strong></td>
                     <td th:text="${profile.email}"></td>
-                    <td th:text="${profile.profileType}"></td>
-                    <td th:text="${profile.department}"></td>
                     <td>
-                        <a th:href="@{/api/profiles/preview/{id}(id=${profile.id})}" class="btn-preview">Preview</a>
-                        <a th:href="@{/api/profiles/edit/{id}(id=${profile.id})}" class="btn-edit">Edit</a>
-                        <a th:href="@{/api/profiles/delete/{id}(id=${profile.id})}" class="btn-delete" onclick="return confirm('Are you sure?')">Delete</a>
-                        <a th:href="@{/api/profiles/{id}/pdf(id=${profile.id})}" class="btn-pdf">PDF</a>
-                        <a th:href="@{/api/profiles/{id}/qrcode(id=${profile.id})}" class="btn-qr" target="_blank">QR</a>
+                        <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;background:var(--primary-light);color:var(--primary);"
+                              th:text="${profile.profileType}"></span>
+                    </td>
+                    <td th:text="${profile.department}"></td>
+                    <td style="white-space: nowrap;">
+                        <a th:href="@{/api/profiles/preview/{id}(id=${profile.id})}" class="btn btn-preview" style="padding:6px 12px;font-size:12px;">View</a>
+                        <a th:href="@{/api/profiles/edit/{id}(id=${profile.id})}" class="btn btn-edit" style="padding:6px 12px;font-size:12px;">Edit</a>
+                        <a th:href="@{/api/profiles/delete/{id}(id=${profile.id})}" class="btn btn-delete" style="padding:6px 12px;font-size:12px;"
+                           onclick="return confirm('Are you sure you want to delete this profile?')">Delete</a>
+                        <a th:href="@{/api/profiles/{id}/pdf(id=${profile.id})}" class="btn btn-pdf" style="padding:6px 12px;font-size:12px;">PDF</a>
+                        <a th:href="@{/api/profiles/{id}/qrcode(id=${profile.id})}" class="btn btn-qr" style="padding:6px 12px;font-size:12px;" target="_blank">QR</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(profiles)}">
+                    <td colspan="7" style="text-align:center;padding:40px;color:var(--gray-400);">
+                        No profiles found.
+                        <a th:href="@{/api/profiles/create}" style="color:var(--primary);text-decoration:underline;">Create one</a>
                     </td>
                 </tr>
             </tbody>

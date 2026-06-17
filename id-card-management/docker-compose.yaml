@@ -1,0 +1,83 @@
+# services:
+#   # ============================================
+#   # 1. MySQL Database Container
+#   # ============================================
+#   mysql:
+#     image: mysql:8.0
+#     container_name: e20221469-mysql
+#     restart: unless-stopped
+#     environment:
+#       MYSQL_ROOT_PASSWORD: Hello@123
+#       MYSQL_DATABASE: B-Huy_Chanchhinghoir-db  
+#       MYSQL_CHARACTER_SET_SERVER: utf8mb4
+#       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+#     ports:
+#       - "3307:3306"
+#     volumes:
+#       - mysql_data:/var/lib/mysql
+#     networks:
+#       - e20221469-network
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       timeout: 20s
+#       retries: 10
+
+#   # ============================================
+#   # 2. Spring Boot Application Container
+#   # ============================================
+#   app:
+#     build: .
+#     container_name: e20221469-app
+#     restart: unless-stopped
+#     depends_on:
+#       mysql:
+#         condition: service_healthy
+#     environment:
+#       # Database configuration
+#       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/B-Huy_Chanchhinghoir-db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#       SPRING_DATASOURCE_USERNAME: root
+#       SPRING_DATASOURCE_PASSWORD: Hello@123
+#       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+#       SPRING_JPA_SHOW_SQL: "true"
+#       # Server port configuration
+#       SERVER_PORT: 8081
+#     ports:
+#       - "8443:8081"   # Map host 8443 to container 8081
+#       # SSH port removed - not needed for application
+#     volumes:
+#       - ./uploads:/app/uploads
+#       - maven_cache:/root/.m2
+#     networks:
+#       - e20221469-network
+
+#   # ============================================
+#   # 3. NGINX Proxy (Optional)
+#   # ============================================
+#   nginx:
+#     image: nginx:alpine
+#     container_name: e20221469-nginx
+#     restart: unless-stopped
+#     depends_on:
+#       - app
+#     ports:
+#       - "8080:8080"   # NGINX listens on 8080
+#     volumes:
+#       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+#     networks:
+#       - e20221469-network
+
+# # ============================================
+# # Volumes
+# # ============================================
+# volumes:
+#   mysql_data:
+#     driver: local
+#   maven_cache:
+#     driver: local
+
+# # ============================================
+# # Networks
+# # ============================================
+# networks:
+#   e20221469-network:
+#     driver: bridge
